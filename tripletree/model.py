@@ -1498,22 +1498,23 @@ class TripleTree:
         preds_and_weights = leaves[['value','weight_sum']].values
         marginals = {}; components = [{} for _ in range(self.num_features)]
         # Iterate through powerset of features (from https://stackoverflow.com/a/1482316).
-        for subset in tqdm(chain.from_iterable(combinations(range(self.num_features), r) for r in range(1,self.num_features+1))):
-            # Identify the set of leaves compatible with this feature set.
-            matching_leaves = set.intersection(*(indices[fj] for fj in subset))
-            d = preds_and_weights[np.array(list(matching_leaves))]
+        for subset in tqdm(chain.from_iterable(combinations(range(self.num_features), r) for r in range(self.num_features+1)), disable=True):
+            if subset == (): d = preds_and_weights
+            else:
+                # Identify the set of leaves compatible with this feature set.
+                matching_leaves = set.intersection(*(indices[fj] for fj in subset))
+                d = preds_and_weights[np.array(list(matching_leaves))]
             # Compute marginal prediction for this subset.
             marginals[subset] = np.average(d[:,0], weights=d[:,1])
-            if len(subset) > 1:
+            if len(subset) > 0:
                 for i, f in enumerate(subset):
                     # For each feature in the subset, compute the effect of adding it.
                     subset_without = subset[:i]+subset[i+1:]
                     components[f][subset_without] = marginals[subset] - marginals[subset_without]
         # Finally, compute SHAP values.
         n_fact = math.factorial(self.num_features)
-        w = [math.factorial(i) * math.factorial(self.num_features - i - 1) / n_fact for i in range(1,self.num_features)]
-        print(w)
-        SHAP = [sum(w[len(s)-1] * val # weighted sum of contributions...
+        w = [math.factorial(i) * math.factorial(self.num_features - i - 1) / n_fact for i in range(0,self.num_features)]
+        SHAP = [sum(w[len(s)] * val # weighted sum of contributions...
                 for s, val in c.items()) # from each subset...     
                 for c in components # for each feature.
                 ]
