@@ -3,8 +3,11 @@
 </p>
 
 
+**TripleTree** is a much-extended variant of the CART algorithm, specialised for the task of jointly modelling the policy, value function and temporal dynamics of black box agents in Markov decision processes (MDPs). It was first introduced in [this paper](https://arxiv.org/abs/2009.04743). 
 
-**TripleTree** is a much-extended variant of the CART algorithm, specialised for the task of jointly modelling the policy, value function and temporal dynamics of black box agents in Markov decision processes (MDPs). It was first introduced in [this paper](https://arxiv.org/abs/2009.04743).
+### Requirements
+
+Our implementation is in Python. It makes use of **Numpy**
 
  ### Installation
 
@@ -13,6 +16,10 @@
 ### Usage
 
 #### Growing a Tree
+
+[COMING SOON]
+
+### Sample Notebooks
 
 [COMING SOON]
 
