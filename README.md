@@ -7,7 +7,7 @@
 
 ### Requirements
 
-Our implementation is in Python. It makes use of **Numpy**
+This implementation is in Python. It just relies on `math`, `itertools`, `numpy`, `scipy`, `pandas` and `matplotlib` for calculations and visualisations. We also use `tqdm` to produce nice progress bars for operations that take some time to complete.
 
  ### Installation
 
