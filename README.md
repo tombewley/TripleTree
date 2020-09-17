@@ -22,7 +22,7 @@ This implementation is in Python 3.6.9. It just relies on `math`, `itertools`, `
 
 ### Example Scripts
 
-Check out the `/examples` folder for script that reproduce some of the results from our original paper.
+Check out the `examples/` folder for script that reproduce some of the results from our original paper.
 
 ### Citation
 
