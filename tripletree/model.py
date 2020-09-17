@@ -1338,7 +1338,6 @@ class TripleTree:
                 feature_ranges.append(r)
                 # Filter by features.
                 if mode == 'overlap':
-                    # Determine whether two ranges overlap:
                     query.append(f'`{f} <`>={r[0]}')
                     query.append(f'`{f} >`<={r[1]}')
                 elif mode == 'contain':
@@ -1496,7 +1495,7 @@ class TripleTree:
         # Get predictions and weights into a big NumPy array, much faster than Pandas.
         assert attribute == 'value' and not self.classifier, 'Only one implemented.'
         preds_and_weights = leaves[['value','weight_sum']].values
-        marginals = {}; components = [{} for _ in range(self.num_features)]
+        marginals = {}; contributions = [{} for _ in range(self.num_features)]
         # Iterate through powerset of features (from https://stackoverflow.com/a/1482316).
         for subset in tqdm(chain.from_iterable(combinations(range(self.num_features), r) for r in range(self.num_features+1)), disable=True):
             if subset == (): d = preds_and_weights
@@ -1510,15 +1509,15 @@ class TripleTree:
                 for i, f in enumerate(subset):
                     # For each feature in the subset, compute the effect of adding it.
                     subset_without = subset[:i]+subset[i+1:]
-                    components[f][subset_without] = marginals[subset] - marginals[subset_without]
-        # Finally, compute SHAP values.
+                    contributions[f][subset_without] = marginals[subset] - marginals[subset_without]
+        # Finally, compute and return SHAP values.
         n_fact = math.factorial(self.num_features)
         w = [math.factorial(i) * math.factorial(self.num_features - i - 1) / n_fact for i in range(0,self.num_features)]
-        SHAP = [sum(w[len(s)] * val # weighted sum of contributions...
-                for s, val in c.items()) # from each subset...     
-                for c in components # for each feature.
-                ]
-        return SHAP
+        return [
+                sum(w[len(subset)] * con # weighted sum of contributions...
+                for subset, con in f.items()) # from each subset...     
+                for f in contributions # for each feature.
+               ]
 
 
 # ===================================================================================================================
