@@ -223,6 +223,8 @@ class TripleTree:
             elif self.scale_features_by == 'percentiles':
                 ranges = (np.percentile(self.o, 95, axis=0) - np.percentile(self.o, 5, axis=0))
             else: raise ValueError('Invalid feature scaling method.')
+            # A dimension has no range if it never changes. This line prevents a div/0 error.
+            ranges[ranges==0] = 1
             self.feature_scales = max(ranges) / ranges
         
         if self.derivative_scales == []:
@@ -233,6 +235,8 @@ class TripleTree:
                     ranges = np.nanmax(self.d, axis=0) - np.nanmin(self.d, axis=0)
                 elif self.scale_derivatives_by == 'std':
                     ranges = np.nanstd(self.d, axis=0)
+                # A dimension has no range if it never changes. This line prevents a div/0 error.
+                ranges[ranges==0] = 1
                 self.derivative_scales = max(ranges) / ranges
         # Normalise feature derivatives. These are used for impurity calculations.
         self.d_norm = self.d * self.derivative_scales 
@@ -245,6 +249,8 @@ class TripleTree:
                 elif self.scale_actions_by == 'percentiles':
                     ranges = (np.percentile(self.a, 95, axis=0) - np.percentile(self.a, 5, axis=0))
                 else: raise ValueError('Invalid action scaling method.')
+                # A dimension has no range if it never changes. This line prevents a div/0 error.
+                ranges[ranges==0] = 1
                 self.action_scales = max(ranges) / ranges
             # Normalise action dimensions. These are used for impurity calculations.
             self.a_norm = self.a * self.action_scales
@@ -320,7 +326,7 @@ class TripleTree:
             var = np.var(self.g[indices])
             node.value_impurity_sum = var * node.num_samples
             node.value_impurity = math.sqrt(var) # NOTE: Using standard deviation.
-        else: node.value_mean = 0; node.value_impurity = 0      
+        else: node.value_mean = 0; node.value_impurity = 0     
          
         # Feature derivative attributes.
         if self.d != []:
@@ -381,13 +387,14 @@ class TripleTree:
         if (node.derivative_impurity > 0) and (self.split_by == 'pick' or self.impurity_weights[2] > 0): do_derivatives = True
         else: do_derivatives = False
         if (not do_action) and (not do_value) and (not do_derivatives): return False
+
         # Iterate through features and find best split(s) for each.
         candidate_splits = []
         for f in range(self.num_features):
             candidate_splits += self.split_feature(node, f, do_action, do_value, do_derivatives)
         # If beneficial split found on at least one feature...
         if sum([s[3][0] != None for s in candidate_splits]) > 0: 
-            split_quality = [s[3][2] for s in candidate_splits]              
+            split_quality = [s[3][2] for s in candidate_splits]          
             # Choose one feature to split on.  
             if self.stochastic_splits:
                 # Sample in proportion to relative impurity gain.
@@ -466,6 +473,7 @@ class TripleTree:
                                                   [f,'value',indices_sorted,[None,None,0,0,0,0]],
                                                   [f,'derivative',indices_sorted,[None,None,0,0,0,0]]]
         else: best_split = [[f,self.split_by,indices_sorted,[None,None,0,0,0,0]]]
+        
         for num_left in range(self.min_samples_leaf_abs, parent.num_samples+1-self.min_samples_leaf_abs):
             i = indices_sorted[num_left-1]
             num_right = parent.num_samples - num_left
@@ -614,9 +622,9 @@ class TripleTree:
         recurse_compute_cost(self.tree)
         # Remove the subtree below the lowest-cost node.
         node = self.node(sorted(costs, key=lambda x: x[1])[0][0])
-        node.left = node.right = None
-        # Remove variables associated with the split and register all samples as residing at this node (now a leaf!)
-        del node.feature_index; del node.split_by; del node.threshold; del node.feature_importance
+        # Remove variables associated with the split.
+        node.left = node.right = None; del node.feature_index; del node.split_by; del node.threshold; del node.feature_importance
+        # Register all samples as residing at this node (now a leaf!)
         self.nint[node.indices] = node.nint
         # Recompute leaf population.
         self.leaf_nints = self.get_leaf_nints() 
@@ -1671,7 +1679,7 @@ class TripleTree:
                     r2 = np.vstack((p2[:-1],p2[1:])).T
                 else: r2 = [[None,None]]
                 # Iterate through the linear or rectangular grid created by all these partitions. 
-                for m, ((min1, max1), (min2, max2)) in enumerate(tqdm(np.array([[i,j] for i in r1 for j in r2]), desc='Projecting hypercubes')):
+                for m, ((min1, max1), (min2, max2)) in enumerate(tqdm(np.array([[i,j] for i in r1 for j in r2]), desc='Projecting hyperrectangles')):
                     min1 = max(min1, axis_lims[0][0])
                     max1 = min(max1, axis_lims[0][1])
                     width = max1 - min1
